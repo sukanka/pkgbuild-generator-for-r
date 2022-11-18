@@ -7,6 +7,19 @@ import requests
 import yaml
 
 
+def str_presenter(dumper, data):
+    """configures yaml for dumping multiline strings
+    Ref: https://stackoverflow.com/questions/8640959/how-can-i-control-what-scalar-form-pyyaml-uses-for-my-data"""
+    if data.count('\n') > 0:  # check for multiline string
+        return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='|')
+    return dumper.represent_scalar('tag:yaml.org,2002:str', data)
+
+
+yaml.add_representer(str, str_presenter)
+yaml.representer.SafeRepresenter.add_representer(
+    str, str_presenter)  # to use with safe_dum
+
+
 class PKGBUILDGenerator(object):
     def __init__(
         self,
@@ -426,8 +439,12 @@ class PKGBUILDGenerator(object):
                     "source": "regex",
                     "regex": f'{desc_dict["rpkgname"]}_([\\d._-]+).tar.gz',
                     "url": url
-                }
-            ]
+                },
+            ],
+            # add prebuild and post build scripts in lilac.yaml
+            # "pre_build_script": "update_pkgver_and_pkgrel(_G.newver.lstrip('v'))" "\n" "run_cmd(['updpkgsums'])",
+            "post_build_script": "git_pkgbuild_commit()" "\n" "update_aur_repo()",
+
         }
         if desc_dict["repo"] == "github":
             yaml_dict["update_on"] = [{
@@ -442,6 +459,8 @@ class PKGBUILDGenerator(object):
             yaml.safe_dump(yaml_dict, f)
         # run prettier to make pretty yaml
         os.system(f'prettier -w {filename}')
+        # replace |- with | in lilac.yaml
+        os.system(f'sed -i "s/|-/|/g" {filename}')
 
     def write_lilac_py(self, filename, desc_dict):
         # currently, we do not generate `lilac.py` for R package from github
@@ -465,14 +484,9 @@ class PKGBUILDGenerator(object):
                 "    update_pkgver_and_pkgrel(_G.newver.lstrip('v'))\n"
             ])
 
-        post_build_line = '\n'.join([
-            "def post_build():",
-            "    git_pkgbuild_commit()\n"
-        ])
         file_content = '\n'.join([
             import_line,
             pre_build_line,
-            post_build_line
         ])
         with open(filename, "w", newline='\n') as f:
             f.write(file_content)
