@@ -438,8 +438,11 @@ class PKGBUILDGenerator(object):
                 {
                     "source": "regex",
                     "regex": f'{desc_dict["rpkgname"]}_([\\d._-]+).tar.gz',
-                    "url": url
+                    "url": url,
                 },
+                {
+                    'alias': 'r'
+                }
             ],
             # add prebuild and post build scripts in lilac.yaml
             # "pre_build_script": "update_pkgver_and_pkgrel(_G.newver.lstrip('v'))" "\n" "run_cmd(['updpkgsums'])",
