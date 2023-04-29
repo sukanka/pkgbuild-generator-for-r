@@ -445,7 +445,13 @@ class PKGBUILDGenerator(object):
                 }
             ],
             # add prebuild and post build scripts in lilac.yaml
-            # "pre_build_script": "update_pkgver_and_pkgrel(_G.newver.lstrip('v'))" "\n" "run_cmd(['updpkgsums'])",
+            "pre_build_script":
+            "for line in edit_file('PKGBUILD'):" "\n"
+            "  if line.startswith('_pkgver='):" "\n"
+            "    line = f'_pkgver={_G.newver}'" "\n"
+            "  print(line)" "\n"
+            "update_pkgver_and_pkgrel(_G.newver.replace(':', '.').replace('-', '.'))" "\n",
+
             "post_build_script": "git_pkgbuild_commit()" "\n" "update_aur_repo()",
 
         }
@@ -647,7 +653,7 @@ class PKGBUILDGenerator(object):
         os.makedirs(osp.join(destdir, pkgname), exist_ok=True)
         self.write_pkgbuild(pkgbuild_filename, desc_dict)
         self.write_lilac_yaml(lilac_yaml_filename, desc_dict)
-        self.write_lilac_py(lilac_py_filename, desc_dict)
+        # self.write_lilac_py(lilac_py_filename, desc_dict)
         if updpkgsums:
             if verbose:
                 print("updating source checksums")
